@@ -1,0 +1,15 @@
+[FORMAT]
+max-line-length = 120
+
+[MESSAGES CONTROL]
+# Disable specific messages by their symbolic names
+disable=
+    too-few-public-methods,
+    too-many-locals,
+    too-many-arguments,
+    too-many-boolean-expressions,
+    too-many-branches,
+    too-many-nested-blocks,
+    too-many-public-methods,
+    too-many-statements,
+    duplicate-code

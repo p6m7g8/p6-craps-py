@@ -1,0 +1,6 @@
+.pyre/
+.pytest_cache/
+.venv/
+htmlcov/
+p6_craps_py.egg-info/
+**/__pycache__/
