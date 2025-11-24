@@ -18,31 +18,128 @@
 
 - [Code of Conduct](<https://github.com//.github/blob/main/CODE_OF_CONDUCT.md>)
 
-## Usage
-
-### Aliases
-
-### Functions
-
-## Hierarchy
+## Modules
 
 ```text
-.
-├── bin
-│   └── script.py
-├── p6_template_uv.egg-info
-│   ├── dependency_links.txt
-│   ├── PKG-INFO
-│   ├── requires.txt
-│   ├── SOURCES.txt
-│   └── top_level.txt
-├── pyproject.toml
-├── README.md
-├── tests
-│   └── test_always_pass.py
-└── uv.lock
 
-4 directories, 10 files
+                                       players
+config.json -> config.py -> sim.py ->  strategy
+                                       engine    -> stats -> ui/terminal -> bin/script -> bin/ctl
+
+```
+
+```text
+1. CLI startup (bin/script.py)
+------------------------------
+
+bin/script.py
+  |
+  |-- parse args with docopt:
+  |     --config, --max-rolls, --frame-delay, --no-clear, --debug/--verbose
+  |
+  |-- setup_logging(...)
+  |
+  |-- cfg = load_config(path)          (config.Config)
+  |-- sim = Simulation(cfg)            (sim.Simulation)
+  |      |
+  |      +-> create_player_states(cfg) (players.PlayerState[])
+  |      +-> get_strategy_by_name(...) (strategy.*)
+  |      +-> CrapsEngine(), CrapsTable() (engine.*)
+  |
+  |-- result = sim.run(max_rolls, frame_callback)
+  |
+  |-- summary = summarize_simulation(sim.players, result) (stats.SimulationSummary)
+  |
+  |-- final UI:
+  |     - live frames already drawn via frame_callback
+  |     - format_summary(summary) + print
+
+
+2. Inside Simulation.run(...)
+-----------------------------
+
+for each run:
+
+  initial:
+    - maybe call frame_callback(sim, None, "initial")
+
+  loop:
+    while no stop_reason and max_rolls not hit:
+
+      a) start new roll
+         - self._roll_index        += 1
+         - self._shooter_roll_index+= 1
+
+      b) betting phase
+         for each (player_index, (player_state, strategy)):
+
+             if player outside bankroll limits: skip
+
+             game_state = {
+               GAME_STATE_PHASE:          engine.phase,
+               GAME_STATE_HAS_PASS_LINE_BET:
+                                         table.has_pass_line_bet(player_index),
+             }
+
+             decisions = strategy.decide(game_state, player_state)
+             _apply_bet_decisions(decisions, ...)
+               -> PlayerState.debit(...)
+               -> CrapsTable.place_bet(Bet(...))
+
+         frame_callback(sim, None, "after_bets")
+
+      c) roll dice
+         point_cycle = engine.roll()          (engine.CrapsEngine.roll)
+         temp_event  = SimulationEvent(..., resolved_bets=())
+         frame_callback(sim, temp_event, "after_roll")
+
+      d) resolve bets
+         resolved = table.resolve_on_point_cycle_result(point_cycle)
+           -> produces ResolvedBet objects keyed by Bet/player
+
+         for each resolved:
+             if resolved.payout > 0:
+                 PlayerState.credit(resolved.payout)
+
+         if point_cycle.completed_point:
+             players[current_shooter].points_played_as_shooter += 1
+             _advance_shooter()
+
+         final_event = SimulationEvent(..., resolved_bets=resolved)
+         events.append(final_event)
+
+         frame_callback(sim, final_event, "after_payouts")
+
+      e) check stop conditions
+         stop_reason = _should_stop()
+           - STOP_REASON_MAX_POINTS if engine.completed_points >= cfg.simulation.points
+           - STOP_REASON_BANKROLL   if all players at bankroll limits
+           - or STOP_REASON_MAX_ROLLS if max_rolls guard trips
+
+  return SimulationResult(events, completed_points, stop_reason)
+
+
+3. What the UI & stats see
+--------------------------
+
+- During the run:
+    frame_callback(sim, event, stage) in bin/script.py:
+
+      - build_header_info(sim.engine, roll_index, shooter_index, shooter_roll_index)
+      - snapshot_players(sim.players, sim.table)
+      - render_frame(header, player_rows)
+      - draw_frame(stdout, frame, clear=not --no-clear)
+      - optional time.sleep(--frame-delay)
+
+- After the run:
+    summary = summarize_simulation(sim.players, result):
+
+      - compute_dice_totals(result.events)
+      - summarize_players(sim.players)
+      - SimulationSummary(stop_reason, completed_points, dice_stats, player_summaries)
+
+    ui.terminal.format_summary(summary) turns that into a text block
+    printed under the final live frame.
 ```
 
 ## Author
