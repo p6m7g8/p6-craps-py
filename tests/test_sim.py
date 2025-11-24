@@ -1,6 +1,11 @@
 """Tests for the simulation loop and stop conditions."""
 
 from p6_craps.config import Config, PlayerConfig, SimulationConfig
+from p6_craps.constants import (
+    STOP_REASON_BANKROLL,
+    STOP_REASON_MAX_POINTS,
+    STOP_REASON_MAX_ROLLS,
+)
 from p6_craps.engine import (
     CrapsEngine,
     CrapsTable,
@@ -8,12 +13,7 @@ from p6_craps.engine import (
     PointCycleResult,
     Roll,
 )
-from p6_craps.sim import (
-    STOP_REASON_BANKROLL,
-    STOP_REASON_MAX_POINTS,
-    STOP_REASON_MAX_ROLLS,
-    Simulation,
-)
+from p6_craps.sim import Simulation
 from p6_craps.strategy import STRATEGY_FLAT_PASS
 
 

@@ -11,15 +11,13 @@ from .constants import (
     BET_TYPE_PASS_LINE,
     GAME_STATE_HAS_PASS_LINE_BET,
     GAME_STATE_PHASE,
+    STOP_REASON_BANKROLL,
+    STOP_REASON_MAX_POINTS,
+    STOP_REASON_MAX_ROLLS,
 )
 from .engine import Bet, CrapsEngine, CrapsTable, PointCycleResult, ResolvedBet
 from .players import PlayerState, create_player_states
 from .strategy import BetDecision, Strategy, get_strategy_by_name
-
-# Stop reasons for a simulation run.
-STOP_REASON_MAX_POINTS = "max_points"
-STOP_REASON_BANKROLL = "bankroll_limits"
-STOP_REASON_MAX_ROLLS = "max_rolls"
 
 
 @dataclass(slots=True)
