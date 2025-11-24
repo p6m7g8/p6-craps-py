@@ -1,18 +1,16 @@
 """Tests for the betting strategy module."""
 
 from p6_craps.config import PlayerConfig
-from p6_craps.engine import Phase
-from p6_craps.players import PlayerState
-from p6_craps.strategy import (
+from p6_craps.constants import (
     ACTION_PLACE,
     BET_TYPE_PASS_LINE,
     GAME_STATE_HAS_PASS_LINE_BET,
     GAME_STATE_PHASE,
     STRATEGY_FLAT_PASS,
-    BetDecision,
-    FlatPassStrategy,
-    get_strategy_by_name,
 )
+from p6_craps.engine import Phase
+from p6_craps.players import PlayerState
+from p6_craps.strategy import BetDecision, FlatPassStrategy, get_strategy_by_name
 
 
 def _make_player_state(name: str = "Player", bankroll: int = 2000) -> PlayerState:

@@ -22,21 +22,15 @@ from typing import (
     runtime_checkable,
 )
 
+from .constants import (
+    ACTION_PLACE,
+    BET_TYPE_PASS_LINE,
+    GAME_STATE_HAS_PASS_LINE_BET,
+    GAME_STATE_PHASE,
+    STRATEGY_FLAT_PASS,
+)
 from .engine import Phase
 from .players import PlayerState
-
-# Strategy names
-STRATEGY_FLAT_PASS = "flat_pass"
-
-# Game state keys
-GAME_STATE_PHASE = "phase"
-GAME_STATE_HAS_PASS_LINE_BET = "has_pass_line_bet"
-
-# Bet actions
-ACTION_PLACE = "place"
-
-# Bet types
-BET_TYPE_PASS_LINE = "pass_line"
 
 
 @dataclass(slots=True, frozen=True)
