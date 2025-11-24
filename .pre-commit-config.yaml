@@ -67,7 +67,7 @@ repos:
         name: codespell
         entry: uv run codespell
         language: system
-        args: ["-x uv.lock"]
+        args: ["-x  uv.lock"]
 
       # --- Tests / runners ---
       - id: pytest

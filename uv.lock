@@ -473,7 +473,7 @@ wheels = [
 ]
 
 [[package]]
-name = "p6-template-uv"
+name = "p6-craps-py"
 source = { virtual = "." }
 dependencies = [
     { name = "docopt" },

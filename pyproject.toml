@@ -1,5 +1,5 @@
 [project]
-name = "p6-template-uv"
+name = "p6-craps-py"
 dynamic = ["version"]
 requires-python = "==3.14.0"
 dependencies = [

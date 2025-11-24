@@ -1,3 +1,5 @@
+"""Core configuration for the craps simulator."""
+
 from __future__ import annotations
 
 import json
