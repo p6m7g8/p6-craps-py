@@ -14,3 +14,8 @@ ACTION_PLACE = "place"
 
 # Bet types
 BET_TYPE_PASS_LINE = "pass_line"
+
+# Stop reasons for a simulation run.
+STOP_REASON_MAX_POINTS = "max_points"
+STOP_REASON_BANKROLL = "bankroll_limits"
+STOP_REASON_MAX_ROLLS = "max_rolls"
