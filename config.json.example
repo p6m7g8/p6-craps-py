@@ -1,0 +1,16 @@
+{
+    "simulation": {
+        "points": 40,
+        "min_bankroll": 0,
+        "max_bankroll": 4000,
+        "random_seed": 42
+    },
+    "players": [
+        {
+            "name": "Shooter 1",
+            "starting_bankroll": 2000,
+            "strategy": "flat_pass",
+            "can_be_shooter": true
+        }
+    ]
+}
