@@ -97,7 +97,6 @@ def _parse_frame_delay(raw_value: Any) -> float:
 
 def _make_frame_callback(clear: bool, frame_delay: float) -> FrameCallback:
     """Create a frame callback that renders the current state to stdout."""
-
     interesting_stages = {
         "initial",
         "after_bets",
