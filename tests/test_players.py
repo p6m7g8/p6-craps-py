@@ -1,8 +1,17 @@
+"""Tests for player state management and creation from configuration."""
+
 from p6_craps.config import Config, PlayerConfig, SimulationConfig
 from p6_craps.players import PlayerState, create_player_states
 
 
 def test_player_state_credit_and_debit_update_profit() -> None:
+    """
+    Test that the PlayerState's credit and debit methods correctly update the bankroll and total profit.
+
+    This test verifies:
+    - Crediting the player's account increases both bankroll and total profit by the credited amount.
+    - Debiting the player's account decreases both bankroll and total profit by the debited amount.
+    """
     cfg = PlayerConfig(
         name="Player 1",
         starting_bankroll=2000,
@@ -21,6 +30,11 @@ def test_player_state_credit_and_debit_update_profit() -> None:
 
 
 def test_player_state_shooter_profit_tracks_only_when_shooting() -> None:
+    """
+    Test that the `shooter_profit` attribute of `PlayerState` only tracks profit and loss
+    when the player is marked as the current shooter. Verifies that credits and debits
+    do not affect `shooter_profit` unless `is_current_shooter` is set to True.
+    """
     cfg = PlayerConfig(
         name="Shooter",
         starting_bankroll=2000,
@@ -41,6 +55,14 @@ def test_player_state_shooter_profit_tracks_only_when_shooting() -> None:
 
 
 def test_create_player_states_builds_state_from_config() -> None:
+    """
+    Test that `create_player_states` correctly builds player state objects from the provided configuration.
+
+    This test verifies that:
+    - A player configuration is correctly transformed into a player state.
+    - The resulting player state has the expected attributes, including name, bankroll, profit values, strategy,
+        and shooter eligibility.
+    """
     player_cfg = PlayerConfig(
         name="Config Player",
         starting_bankroll=1500,

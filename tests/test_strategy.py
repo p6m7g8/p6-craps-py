@@ -1,141 +1,120 @@
-"""Betting strategy definitions for the craps simulator.
+"""Tests for the betting strategy module."""
 
-This module defines:
-
-* A protocol for strategies.
-* A simple value object that describes bet decisions.
-* A concrete "flat pass line" strategy.
-* A factory for resolving strategies by name.
-"""
-
-from __future__ import annotations
-
-from dataclasses import dataclass
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Mapping,
-    Protocol,
-    Sequence,
-    runtime_checkable,
-)
-
+from p6_craps.config import PlayerConfig
 from p6_craps.engine import Phase
 from p6_craps.players import PlayerState
+from p6_craps.strategy import (
+    ACTION_PLACE,
+    BET_TYPE_PASS_LINE,
+    GAME_STATE_HAS_PASS_LINE_BET,
+    GAME_STATE_PHASE,
+    STRATEGY_FLAT_PASS,
+    BetDecision,
+    FlatPassStrategy,
+    get_strategy_by_name,
+)
 
 
-@dataclass(slots=True, frozen=True)
-class BetDecision:
-    """Describe an intended bet operation for a player.
+def _make_player_state(name: str = "Player", bankroll: int = 2000) -> PlayerState:
+    cfg = PlayerConfig(
+        name=name,
+        starting_bankroll=bankroll,
+        strategy=STRATEGY_FLAT_PASS,
+        can_be_shooter=True,
+    )
+    return PlayerState(config=cfg, bankroll=cfg.starting_bankroll)
 
-    The actual execution and tracking of these decisions will be handled
-    by the table/engine layer in a later step.
+
+def test_get_strategy_by_name_returns_flat_pass() -> None:
     """
-
-    action: str
-    bet_type: str
-    amount: int
-
-    def __post_init__(self) -> None:
-        """Perform basic validation on the bet decision."""
-        if self.amount <= 0:
-            raise ValueError("bet amount must be positive")
-
-
-@runtime_checkable
-class Strategy(Protocol):
-    """Protocol for betting strategies."""
-
-    name: str
-
-    def decide(
-        self,
-        game_state: Mapping[str, Any],
-        player_state: PlayerState,
-    ) -> Sequence[BetDecision]:
-        """Return a sequence of bet operations based on the current state."""
-
-
-class FlatPassStrategy:
-    """Simple strategy that plays a flat pass-line bet on come-out.
-
-    Behavior (for now):
-
-    * On come-out:
-      * If the player does not already have a pass-line bet (as indicated
-        by ``game_state[GAME_STATE_HAS_PASS_LINE_BET]``) and has sufficient
-        bankroll, place a single flat pass-line bet.
-    * Otherwise:
-      * Do nothing.
-
-    This strategy will be extended later to add odds and more nuanced
-    behavior.
+    Test that get_strategy_by_name returns an instance of FlatPassStrategy
+    when provided with the STRATEGY_FLAT_PASS constant, and that the strategy's
+    name attribute matches STRATEGY_FLAT_PASS.
     """
-
-    name = STRATEGY_FLAT_PASS
-
-    def __init__(self, unit: int = 25) -> None:
-        """Initialize the strategy.
-
-        Args:
-            unit: The flat pass-line bet amount to attempt.
-        """
-        if unit <= 0:
-            raise ValueError("unit must be positive")
-        self._unit = unit
-
-    def decide(
-        self,
-        game_state: Mapping[str, Any],
-        player_state: PlayerState,
-    ) -> Sequence[BetDecision]:
-        """Return bet decisions for the current state."""
-        decisions: List[BetDecision] = []
-
-        phase = game_state.get(GAME_STATE_PHASE)
-        has_pass_line_bet = bool(game_state.get(GAME_STATE_HAS_PASS_LINE_BET, False))
-
-        if phase is not Phase.COME_OUT:
-            # Strategy only acts on come-out rolls.
-            return decisions
-
-        if has_pass_line_bet:
-            # Already have a pass-line bet; do nothing.
-            return decisions
-
-        if player_state.bankroll < self._unit:
-            # Not enough bankroll for the base unit.
-            return decisions
-
-        decisions.append(
-            BetDecision(
-                action=ACTION_PLACE,
-                bet_type=BET_TYPE_PASS_LINE,
-                amount=self._unit,
-            )
-        )
-        return decisions
+    strategy = get_strategy_by_name(STRATEGY_FLAT_PASS)
+    assert isinstance(strategy, FlatPassStrategy)
+    assert strategy.name == STRATEGY_FLAT_PASS
 
 
-_STRATEGY_REGISTRY: Dict[str, Callable[[], Strategy]] = {
-    STRATEGY_FLAT_PASS: FlatPassStrategy,
-}
-
-
-def get_strategy_by_name(name: str) -> Strategy:
-    """Return a strategy instance for the given name.
-
-    Args:
-        name: Normalized strategy name from configuration.
-
-    Raises:
-        ValueError: If the name does not correspond to a known strategy.
+def test_flat_pass_places_bet_on_come_out_when_no_existing_bet() -> None:
     """
-    try:
-        factory = _STRATEGY_REGISTRY[name]
-    except KeyError as exc:
-        raise ValueError(f"Unknown strategy: {name!r}") from exc
+    Test that the FlatPassStrategy places a pass line bet of the specified unit amount
+    when the game is in the come out phase and the player has no existing pass line bet.
 
-    return factory()
+    This test verifies:
+    - The strategy returns exactly one decision.
+    - The decision is to place a bet (ACTION_PLACE) on the pass line (BET_TYPE_PASS_LINE).
+    - The bet amount matches the strategy's unit value (25).
+    """
+    player_state = _make_player_state()
+    game_state = {
+        GAME_STATE_PHASE: Phase.COME_OUT,
+        GAME_STATE_HAS_PASS_LINE_BET: False,
+    }
+
+    strategy = FlatPassStrategy(unit=25)
+    decisions = strategy.decide(game_state, player_state)
+
+    assert len(decisions) == 1
+    decision = decisions[0]
+    assert isinstance(decision, BetDecision)
+    assert decision.action == ACTION_PLACE
+    assert decision.bet_type == BET_TYPE_PASS_LINE
+    assert decision.amount == 25
+
+
+def test_flat_pass_skips_when_already_has_pass_line_bet() -> None:
+    """
+    Test that the FlatPassStrategy does not place a new Pass Line bet if the player already has one.
+
+    This test verifies that when the game is in the COME_OUT phase and the player already has a Pass Line bet,
+    the strategy's decide method returns an empty list, indicating no additional bets are placed.
+    """
+    player_state = _make_player_state()
+    game_state = {
+        GAME_STATE_PHASE: Phase.COME_OUT,
+        GAME_STATE_HAS_PASS_LINE_BET: True,
+    }
+
+    strategy = FlatPassStrategy(unit=25)
+    decisions = strategy.decide(game_state, player_state)
+
+    assert not decisions
+
+
+def test_flat_pass_skips_when_insufficient_bankroll() -> None:
+    """
+    Test that the FlatPassStrategy does not place a bet when the player's bankroll is insufficient.
+
+    This test verifies that when the player's bankroll is less than the required betting unit,
+    the strategy's decide method returns an empty list, indicating no bets are placed.
+    """
+    player_state = _make_player_state(bankroll=10)
+    game_state = {
+        GAME_STATE_PHASE: Phase.COME_OUT,
+        GAME_STATE_HAS_PASS_LINE_BET: False,
+    }
+
+    strategy = FlatPassStrategy(unit=25)
+    decisions = strategy.decide(game_state, player_state)
+
+    assert not decisions
+
+
+def test_flat_pass_skips_when_not_come_out_phase() -> None:
+    """
+    Test that the FlatPassStrategy does not make any betting decisions when the game is not in the 'come out' phase.
+
+    This test verifies that when the game phase is 'POINT_ON' (i.e., not the 'come out' phase) and the player does not
+         have a pass line bet, the strategy's decide method returns an empty list, indicating no action is taken.
+    """
+    player_state = _make_player_state()
+    game_state = {
+        GAME_STATE_PHASE: Phase.POINT_ON,
+        GAME_STATE_HAS_PASS_LINE_BET: False,
+    }
+
+    strategy = FlatPassStrategy(unit=25)
+    decisions = strategy.decide(game_state, player_state)
+
+    assert not decisions
