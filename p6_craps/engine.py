@@ -13,7 +13,9 @@ from __future__ import annotations
 import enum
 import random
 from dataclasses import dataclass
-from typing import Optional
+from typing import List, Optional, Sequence
+
+from .constants import BET_TYPE_PASS_LINE
 
 
 class Phase(enum.Enum):
@@ -77,7 +79,7 @@ class CrapsEngine:
     * The number of completed point cycles.
 
     It does **not** yet know about specific bets beyond pass-line
-    semantics; that will be layered on in later commits.
+    semantics; that will be layered on via the table model.
     """
 
     def __init__(self, rng: Optional[random.Random] = None) -> None:
@@ -159,3 +161,101 @@ class CrapsEngine:
         """Reset the table to a come-out state with no active point."""
         self.phase = Phase.COME_OUT
         self.point = None
+
+
+@dataclass(slots=True)
+class Bet:
+    """A single wager placed on the craps table."""
+
+    player_index: int
+    bet_type: str
+    base_amount: int
+    odds_amount: int = 0
+    working: bool = True
+
+    @property
+    def total_wagered(self) -> int:
+        """Return the total amount at risk for this bet."""
+        return self.base_amount + self.odds_amount
+
+
+@dataclass(slots=True, frozen=True)
+class ResolvedBet:
+    """Result of resolving a single bet against a roll."""
+
+    bet: Bet
+    payout: int
+    profit: int
+
+
+class CrapsTable:
+    """Container for active bets on the craps table.
+
+    For now this table only knows about pass-line bets and resolves them
+    using the pass-line outcome from :class:`PointCycleResult`.
+    """
+
+    def __init__(self) -> None:
+        """Initialize an empty craps table."""
+        self._bets: List[Bet] = []
+
+    @property
+    def bets(self) -> Sequence[Bet]:
+        """Return a read-only view of active bets."""
+        return tuple(self._bets)
+
+    def place_bet(self, bet: Bet) -> None:
+        """Add a new active bet to the table."""
+        if bet.base_amount <= 0:
+            raise ValueError("bet.base_amount must be positive")
+        self._bets.append(bet)
+
+    def has_pass_line_bet(self, player_index: int) -> bool:
+        """Return True if the player currently has an active pass-line bet."""
+        return any(bet.player_index == player_index and bet.bet_type == BET_TYPE_PASS_LINE for bet in self._bets)
+
+    def resolve_on_point_cycle_result(
+        self,
+        result: PointCycleResult,
+    ) -> List[ResolvedBet]:
+        """Resolve bets affected by a point-cycle result.
+
+        Currently this resolves only pass-line bets based on the
+        ``pass_line_outcome`` field of ``result``. Bets that are
+        resolved are removed from the table.
+
+        Returns:
+            A list of :class:`ResolvedBet` instances representing
+            resolved wagers. The caller is responsible for applying the
+            resulting payouts to player bankrolls.
+        """
+        if result.pass_line_outcome is PassLineOutcome.NONE:
+            return []
+
+        resolved: List[ResolvedBet] = []
+        remaining: List[Bet] = []
+
+        for bet in self._bets:
+            if bet.bet_type != BET_TYPE_PASS_LINE:
+                remaining.append(bet)
+                continue
+
+            total_wagered = bet.total_wagered
+            if result.pass_line_outcome is PassLineOutcome.WIN:
+                # Return stake plus winnings; profit equals stake.
+                payout = total_wagered * 2
+            else:
+                # Stake already deducted at bet placement; nothing returned.
+                payout = 0
+
+            profit = payout - total_wagered
+            resolved.append(
+                ResolvedBet(
+                    bet=bet,
+                    payout=payout,
+                    profit=profit,
+                )
+            )
+
+        self._bets = remaining
+        return resolved
