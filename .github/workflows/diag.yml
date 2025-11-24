@@ -1,0 +1,79 @@
+name: Diagnostic
+
+on:
+  pull_request: {}
+  workflow_dispatch: {}
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v6.0.0
+        with:
+          python-version: "3.14.0"
+      - name: Diagnostic
+        run: |
+          set +e
+          echo "==========> whoami"
+          whoami
+          echo "=========> pwd"
+          pwd
+          echo "=========> uptime"
+          uptime
+          echo "=========> uname"
+          uname -a
+          echo "=========> df"
+          df -h
+          echo "=========> du"
+          du -h -d 1 .
+          echo "=========> bash"
+          bash --version
+          echo "=========> node"
+          echo "=========> python"
+          python -V
+          uv pin version || true
+          which python
+          which pip
+          exit
+          echo "=========> go"
+          go version
+          echo "=========> ruby"
+          ruby -v
+          echo "=========> java"
+          java -version
+          echo "=========> perl"
+          perl -v
+          echo "=========> apt"
+          apt --version
+          echo "=========> curl"
+          curl --version
+          echo "==========> date"
+          date --version
+          echo "==========> git"
+          git --version
+          echo "===========> rust"
+          rustc --version
+          echo "===========> helm"
+          helm version
+          echo "===========> jq"
+          jq --version
+          echo "===========> yq"
+          yq --version
+          echo "=========> GITHUB_PATH"
+          cat $GITHUB_PATH
+          echo "=========> PATH"
+          echo $PATH
+          echo "=========> LS"
+          ls -alFh
+          echo "=========> LS .."
+          ls -alFh ..
+          echo "=========> ENV"
+          env | sort
+          IFS=':' read -r -a array <<< "$PATH"
+          for element in "${array[@]}"; do
+            echo "=========> $element"
+            ls -alFh $element
+          done
