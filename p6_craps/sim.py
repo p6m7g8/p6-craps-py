@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Sequence
+from typing import Callable, List, Optional, Sequence
 
 from .config import Config
 from .constants import (
@@ -40,6 +40,19 @@ class SimulationResult:
     stop_reason: str
 
 
+FrameCallback = Callable[["Simulation", Optional[SimulationEvent], str], None]
+"""Callback type used to observe simulation progress.
+
+Arguments:
+
+* The :class:`Simulation` instance.
+* An optional :class:`SimulationEvent` for the current roll (may be
+  ``None`` for stages before the roll is created).
+* A string stage identifier, such as ``"initial"``, ``"after_bets"``,
+  ``"after_roll"``, or ``"after_payouts"``.
+"""
+
+
 class Simulation:
     """Orchestrate a craps simulation for configured players and limits."""
 
@@ -61,6 +74,21 @@ class Simulation:
 
         self._roll_index: int = 0
         self._shooter_roll_index: int = 0
+
+    @property
+    def roll_index(self) -> int:
+        """Return the index of the current roll (1-based)."""
+        return self._roll_index
+
+    @property
+    def current_shooter_index(self) -> int:
+        """Return the index of the current shooter."""
+        return self._current_shooter_index
+
+    @property
+    def current_shooter_roll_index(self) -> int:
+        """Return the roll count for the current shooter."""
+        return self._shooter_roll_index
 
     def _select_initial_shooter(self) -> int:
         """Return the index of the first eligible shooter."""
@@ -87,10 +115,16 @@ class Simulation:
     def _player_at_global_limits(self, player: PlayerState) -> bool:
         """Return True if the player has reached global bankroll limits."""
         sim_cfg = self._cfg.simulation
+
+        # Hitting or dropping below min is always a stop.
         if player.bankroll <= sim_cfg.min_bankroll:
             return True
-        if player.bankroll >= sim_cfg.max_bankroll:
+
+        # For max, treat it as a strict upper bound: we stop only once
+        # the bankroll moves *above* the configured maximum.
+        if player.bankroll > sim_cfg.max_bankroll:
             return True
+
         return False
 
     def _all_players_at_limits(self) -> bool:
@@ -130,26 +164,41 @@ class Simulation:
                     )
                 )
 
-    def run(self, max_rolls: Optional[int] = None) -> SimulationResult:
+    def run(
+        self,
+        max_rolls: Optional[int] = None,
+        frame_callback: Optional[FrameCallback] = None,
+    ) -> SimulationResult:
         """Run the simulation until points, bankroll limits, or max rolls are reached."""
         events: List[SimulationEvent] = []
 
         # Immediate stop check before any rolls.
         initial_reason = self._should_stop()
         if initial_reason is not None:
+            if frame_callback is not None:
+                # Show the initial state even if we bail out immediately.
+                frame_callback(self, None, "initial")
             return SimulationResult(
                 events=tuple(events),
                 completed_points=self.engine.completed_points,
                 stop_reason=initial_reason,
             )
 
+        # Render an initial frame before the first roll.
+        if frame_callback is not None:
+            frame_callback(self, None, "initial")
+
         stop_reason: Optional[str] = None
 
         while True:
-            # Max-rolls guard before taking another roll.
+            # Max-rolls guard before starting the next roll.
             if max_rolls is not None and self._roll_index >= max_rolls:
                 stop_reason = STOP_REASON_MAX_ROLLS
                 break
+
+            # Begin a new roll.
+            self._roll_index += 1
+            self._shooter_roll_index += 1
 
             # Let each player act according to their strategy.
             for index, (player, strategy) in enumerate(zip(self.players, self._strategies)):
@@ -163,12 +212,25 @@ class Simulation:
                 decisions = strategy.decide(game_state, player)
                 self._apply_bet_decisions(decisions, index, player)
 
-            # Perform a roll.
-            self._roll_index += 1
-            self._shooter_roll_index += 1
+            if frame_callback is not None:
+                frame_callback(self, None, "after_bets")
 
+            # Perform the roll.
             point_cycle: PointCycleResult = self.engine.roll()
-            resolved_bets: List[ResolvedBet] = self.table.resolve_on_point_cycle_result(point_cycle)
+
+            # Temporary event object immediately after the roll (no payouts yet).
+            roll_event = SimulationEvent(
+                roll_index=self._roll_index,
+                shooter_index=self._current_shooter_index,
+                shooter_roll_index=self._shooter_roll_index,
+                point_cycle=point_cycle,
+                resolved_bets=(),
+            )
+
+            if frame_callback is not None:
+                frame_callback(self, roll_event, "after_roll")
+
+            resolved_bets: List[ResolvedBet] = list(self.table.resolve_on_point_cycle_result(point_cycle))
 
             # Apply payouts to player bankrolls.
             for resolved in resolved_bets:
@@ -181,21 +243,22 @@ class Simulation:
                 self.players[self._current_shooter_index].points_played_as_shooter += 1
                 self._advance_shooter()
 
-            events.append(
-                SimulationEvent(
-                    roll_index=self._roll_index,
-                    shooter_index=self._current_shooter_index,
-                    shooter_roll_index=self._shooter_roll_index,
-                    point_cycle=point_cycle,
-                    resolved_bets=tuple(resolved_bets),
-                )
+            final_event = SimulationEvent(
+                roll_index=self._roll_index,
+                shooter_index=self._current_shooter_index,
+                shooter_roll_index=self._shooter_roll_index,
+                point_cycle=point_cycle,
+                resolved_bets=tuple(resolved_bets),
             )
+            events.append(final_event)
+
+            if frame_callback is not None:
+                frame_callback(self, final_event, "after_payouts")
 
             stop_reason = self._should_stop()
             if stop_reason is not None:
                 break
 
-        # Fallback (should not be hit, but keeps type checkers happy).
         if stop_reason is None:
             stop_reason = STOP_REASON_MAX_POINTS
 

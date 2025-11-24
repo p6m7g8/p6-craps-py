@@ -19,3 +19,5 @@ BET_TYPE_PASS_LINE = "pass_line"
 STOP_REASON_MAX_POINTS = "max_points"
 STOP_REASON_BANKROLL = "bankroll_limits"
 STOP_REASON_MAX_ROLLS = "max_rolls"
+
+DEFAULT_CONFIG_PATH = "config.json"
