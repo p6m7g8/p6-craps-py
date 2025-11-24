@@ -11,10 +11,32 @@ This module defines:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, List, Mapping, Protocol, Sequence, runtime_checkable
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    Protocol,
+    Sequence,
+    runtime_checkable,
+)
 
 from .engine import Phase
 from .players import PlayerState
+
+# Strategy names
+STRATEGY_FLAT_PASS = "flat_pass"
+
+# Game state keys
+GAME_STATE_PHASE = "phase"
+GAME_STATE_HAS_PASS_LINE_BET = "has_pass_line_bet"
+
+# Bet actions
+ACTION_PLACE = "place"
+
+# Bet types
+BET_TYPE_PASS_LINE = "pass_line"
 
 
 @dataclass(slots=True, frozen=True)
@@ -56,7 +78,7 @@ class FlatPassStrategy:
 
     * On come-out:
       * If the player does not already have a pass-line bet (as indicated
-        by ``game_state["has_pass_line_bet"]``) and has sufficient
+        by ``game_state[GAME_STATE_HAS_PASS_LINE_BET]``) and has sufficient
         bankroll, place a single flat pass-line bet.
     * Otherwise:
       * Do nothing.
@@ -65,7 +87,7 @@ class FlatPassStrategy:
     behavior.
     """
 
-    name = "flat_pass"
+    name = STRATEGY_FLAT_PASS
 
     def __init__(self, unit: int = 25) -> None:
         """Initialize the strategy.
@@ -82,21 +104,11 @@ class FlatPassStrategy:
         game_state: Mapping[str, Any],
         player_state: PlayerState,
     ) -> Sequence[BetDecision]:
-        """Return bet decisions for the current state.
-
-        Expected keys in ``game_state``:
-
-        * ``phase``: a :class:`Phase` value.
-        * ``has_pass_line_bet``: bool indicating whether the player
-          already has an active pass-line bet.
-
-        The function is intentionally conservative and returns an empty
-        list whenever required context is missing.
-        """
+        """Return bet decisions for the current state."""
         decisions: List[BetDecision] = []
 
-        phase = game_state.get("phase")
-        has_pass_line_bet = bool(game_state.get("has_pass_line_bet", False))
+        phase = game_state.get(GAME_STATE_PHASE)
+        has_pass_line_bet = bool(game_state.get(GAME_STATE_HAS_PASS_LINE_BET, False))
 
         if phase is not Phase.COME_OUT:
             # Strategy only acts on come-out rolls.
@@ -112,26 +124,31 @@ class FlatPassStrategy:
 
         decisions.append(
             BetDecision(
-                action="place",
-                bet_type="pass_line",
+                action=ACTION_PLACE,
+                bet_type=BET_TYPE_PASS_LINE,
                 amount=self._unit,
             )
         )
         return decisions
 
 
+_STRATEGY_REGISTRY: Dict[str, Callable[[], Strategy]] = {
+    STRATEGY_FLAT_PASS: FlatPassStrategy,
+}
+
+
 def get_strategy_by_name(name: str) -> Strategy:
     """Return a strategy instance for the given name.
 
     Args:
-        name: Strategy name from configuration (case-insensitive).
+        name: Normalized strategy name from configuration.
 
     Raises:
         ValueError: If the name does not correspond to a known strategy.
     """
-    normalized = name.strip().lower()
+    try:
+        factory = _STRATEGY_REGISTRY[name]
+    except KeyError as exc:
+        raise ValueError(f"Unknown strategy: {name!r}") from exc
 
-    if normalized == "flat_pass":
-        return FlatPassStrategy()
-
-    raise ValueError(f"Unknown strategy: {name!r}")
+    return factory()
