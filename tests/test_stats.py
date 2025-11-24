@@ -8,10 +8,8 @@ from p6_craps.sim import SimulationEvent, SimulationResult
 from p6_craps.stats import (
     DiceTotalStats,
     PlayerSummary,
-    SimulationSummary,
     compute_dice_totals,
     summarize_players,
-    summarize_simulation,
 )
 
 
