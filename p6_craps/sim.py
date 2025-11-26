@@ -29,6 +29,8 @@ class SimulationEvent:
     shooter_roll_index: int
     point_cycle: PointCycleResult
     resolved_bets: Sequence[ResolvedBet]
+    bets_snapshot: Sequence[Bet]
+    shooter_pnl: int
 
 
 @dataclass(slots=True)
@@ -217,14 +219,17 @@ class Simulation:
 
             # Perform the roll.
             point_cycle: PointCycleResult = self.engine.roll()
-
-            # Temporary event object immediately after the roll (no payouts yet).
+            # Take a snapshot of all bets and shooter P&L after the roll
+            bets_snapshot = tuple(self.table.bets)
+            shooter_pnl = self.players[self._current_shooter_index].shooter_profit
             roll_event = SimulationEvent(
                 roll_index=self._roll_index,
                 shooter_index=self._current_shooter_index,
                 shooter_roll_index=self._shooter_roll_index,
                 point_cycle=point_cycle,
                 resolved_bets=(),
+                bets_snapshot=bets_snapshot,
+                shooter_pnl=shooter_pnl,
             )
 
             if frame_callback is not None:
@@ -242,13 +247,17 @@ class Simulation:
             if point_cycle.completed_point:
                 self.players[self._current_shooter_index].points_played_as_shooter += 1
                 self._advance_shooter()
-
+            # Update bets snapshot and shooter P&L after payouts
+            bets_snapshot = tuple(self.table.bets)
+            shooter_pnl = self.players[self._current_shooter_index].shooter_profit
             final_event = SimulationEvent(
                 roll_index=self._roll_index,
                 shooter_index=self._current_shooter_index,
                 shooter_roll_index=self._shooter_roll_index,
                 point_cycle=point_cycle,
                 resolved_bets=tuple(resolved_bets),
+                bets_snapshot=bets_snapshot,
+                shooter_pnl=shooter_pnl,
             )
             events.append(final_event)
 

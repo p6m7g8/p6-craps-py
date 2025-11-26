@@ -67,6 +67,10 @@ def test_simulation_stops_when_max_points_reached() -> None:
     assert result.stop_reason == STOP_REASON_MAX_POINTS
     assert result.completed_points == cfg.simulation.points
     assert len(result.events) == cfg.simulation.points
+    # Check that each event has bets_snapshot and shooter_pnl
+    for event in result.events:
+        assert hasattr(event, "bets_snapshot")
+        assert hasattr(event, "shooter_pnl")
 
 
 def test_simulation_stops_immediately_when_bankroll_limits_met() -> None:

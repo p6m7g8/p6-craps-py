@@ -52,6 +52,8 @@ def test_compute_dice_totals_counts_totals_and_phases() -> None:
                 completed_point=False,
             ),
             resolved_bets=(),
+            bets_snapshot=(),
+            shooter_pnl=0,
         ),
         SimulationEvent(
             roll_index=2,
@@ -67,6 +69,8 @@ def test_compute_dice_totals_counts_totals_and_phases() -> None:
                 completed_point=False,
             ),
             resolved_bets=(),
+            bets_snapshot=(),
+            shooter_pnl=0,
         ),
         SimulationEvent(
             roll_index=3,
@@ -82,6 +86,8 @@ def test_compute_dice_totals_counts_totals_and_phases() -> None:
                 completed_point=False,
             ),
             resolved_bets=(),
+            bets_snapshot=(),
+            shooter_pnl=0,
         ),
     ]
 
@@ -135,6 +141,8 @@ def test_summarize_simulation_composes_dice_and_player_stats() -> None:
                 completed_point=False,
             ),
             resolved_bets=(),
+            bets_snapshot=(),
+            shooter_pnl=0,
         )
     ]
     result = SimulationResult(
