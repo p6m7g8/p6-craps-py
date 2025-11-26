@@ -121,11 +121,12 @@ def test_summarize_players_uses_player_state_fields() -> None:
     assert summary.shooter_profit == 50
     assert summary.points_played_as_shooter == 3
     assert summary.strategy_name == STRATEGY_FLAT_PASS
+    assert hasattr(summary, "bankroll_variance")
+    assert hasattr(summary, "max_drawdown")
 
 
 def test_summarize_simulation_composes_dice_and_player_stats() -> None:
     """summarize_simulation should combine dice and player summaries."""
-    player = _make_player_state()
     events = [
         SimulationEvent(
             roll_index=1,
@@ -145,8 +146,4 @@ def test_summarize_simulation_composes_dice_and_player_stats() -> None:
             shooter_pnl=0,
         )
     ]
-    result = SimulationResult(
-        events=tuple(events),
-        completed_points=0,
-        stop_reason="max_points",
-    )
+    # result is not used

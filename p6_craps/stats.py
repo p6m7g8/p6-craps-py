@@ -30,6 +30,8 @@ class PlayerSummary:
     shooter_profit: int
     points_played_as_shooter: int
     strategy_name: str
+    bankroll_variance: float
+    max_drawdown: int
 
 
 @dataclass(slots=True)
@@ -73,11 +75,22 @@ def compute_dice_totals(events: Sequence[SimulationEvent]) -> DiceTotalStats:
     )
 
 
-def summarize_players(players: Sequence[PlayerState]) -> List[PlayerSummary]:
-    """Build final per-player summaries from runtime state."""
+
+def compute_bankroll_stats(events: Sequence[SimulationEvent], starting_bankroll: int) -> tuple[float, int]:
+    """Compute bankroll variance and max drawdown for a player from simulation events (stub)."""
+    # Placeholder: variance 0, drawdown 0
+    return 0.0, 0
+
+def summarize_players(players: Sequence[PlayerState], events: Sequence[SimulationEvent] = None) -> List[PlayerSummary]:
+    """Build final per-player summaries from runtime state and events."""
     summaries: List[PlayerSummary] = []
 
+    # If events are provided, compute stats; else, set to 0/0
     for player in players:
+        if events is not None:
+            variance, drawdown = compute_bankroll_stats(events, player.config.starting_bankroll)
+        else:
+            variance, drawdown = 0.0, 0
         summaries.append(
             PlayerSummary(
                 name=player.name,
@@ -86,6 +99,8 @@ def summarize_players(players: Sequence[PlayerState]) -> List[PlayerSummary]:
                 shooter_profit=player.shooter_profit,
                 points_played_as_shooter=player.points_played_as_shooter,
                 strategy_name=player.strategy_name,
+                bankroll_variance=variance,
+                max_drawdown=drawdown,
             )
         )
 
