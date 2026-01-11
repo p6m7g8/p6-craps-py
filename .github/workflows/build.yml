@@ -10,18 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5.0.0
+      - uses: p6m7g8-actions/checkout@main
 
-      - name: Set up Python 3.14.0
-        uses: actions/setup-python@v6.0.0
-        with:
-          python-version: 3.14.0
-
-      - name: Install pipenv
-        run: pip install uv
-
-      - name: Install dependencies
-        run: uv sync --dev
+      - name: Set up Python
+        uses: p6m7g8-actions/python-setup@main
 
       - name: Run pre-commit hooks
         run: uv run pre-commit run --all-files

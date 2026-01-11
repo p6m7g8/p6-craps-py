@@ -4,7 +4,7 @@ from p6_craps.config import Config, PlayerConfig, SimulationConfig
 from p6_craps.constants import STRATEGY_FLAT_PASS
 from p6_craps.engine import PassLineOutcome, Phase, PointCycleResult, Roll
 from p6_craps.players import PlayerState, create_player_states
-from p6_craps.sim import SimulationEvent, SimulationResult
+from p6_craps.sim import SimulationEvent
 from p6_craps.stats import (
     DiceTotalStats,
     PlayerSummary,
@@ -127,23 +127,4 @@ def test_summarize_players_uses_player_state_fields() -> None:
 
 def test_summarize_simulation_composes_dice_and_player_stats() -> None:
     """summarize_simulation should combine dice and player summaries."""
-    events = [
-        SimulationEvent(
-            roll_index=1,
-            shooter_index=0,
-            shooter_roll_index=1,
-            point_cycle=PointCycleResult(
-                roll=Roll(d1=1, d2=1),
-                phase_before=Phase.COME_OUT,
-                phase_after=Phase.COME_OUT,
-                point_before=None,
-                point_after=None,
-                pass_line_outcome=PassLineOutcome.NONE,
-                completed_point=False,
-            ),
-            resolved_bets=(),
-            bets_snapshot=(),
-            shooter_pnl=0,
-        )
-    ]
-    # result is not used
+    pass
