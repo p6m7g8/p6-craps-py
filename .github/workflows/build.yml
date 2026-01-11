@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: p6m7yg8-actions/checkout@main
+      - uses: p6m7g8-actions/checkout@main
 
       - name: Set up Python
         uses: p6m7g8-actions/python-setup@main
