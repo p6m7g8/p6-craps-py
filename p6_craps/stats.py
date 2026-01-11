@@ -75,11 +75,11 @@ def compute_dice_totals(events: Sequence[SimulationEvent]) -> DiceTotalStats:
     )
 
 
-
 def compute_bankroll_stats(events: Sequence[SimulationEvent], starting_bankroll: int) -> tuple[float, int]:
     """Compute bankroll variance and max drawdown for a player from simulation events (stub)."""
     # Placeholder: variance 0, drawdown 0
     return 0.0, 0
+
 
 def summarize_players(players: Sequence[PlayerState], events: Sequence[SimulationEvent] = None) -> List[PlayerSummary]:
     """Build final per-player summaries from runtime state and events."""
