@@ -9,8 +9,11 @@ from p6_craps.render import render_stats
 from p6_craps.simulate import (
     SimulationConfig,
     default_players,
+    game_config_from_config,
+    players_from_config,
     run_simulation,
     run_until_complete,
+    simulation_config_from_config,
 )
 from p6_craps.stats import StatsSnapshot, TableStatsCollector, percent
 from p6_craps.strategy import (
@@ -45,8 +48,11 @@ __all__ = [
     "Table",
     "TableStatsCollector",
     "default_players",
+    "game_config_from_config",
     "percent",
+    "players_from_config",
     "render_stats",
     "run_simulation",
     "run_until_complete",
+    "simulation_config_from_config",
 ]
