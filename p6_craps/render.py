@@ -39,6 +39,8 @@ def _format_counts(counters: StatsCounters) -> list[TableRow]:
             [f"{counters.outcomes.push} ({_format_percent(counters.outcomes.push, total_rolls)})"],
         ),
         TableRow("totals", [_format_totals(counters.roll_counts.totals)]),
+        TableRow("die 1", [_format_totals(counters.roll_counts.die_one)]),
+        TableRow("die 2", [_format_totals(counters.roll_counts.die_two)]),
         TableRow("point est", [_format_totals(counters.point_counts.established)]),
         TableRow("point made", [_format_totals(counters.point_counts.made)]),
     ]

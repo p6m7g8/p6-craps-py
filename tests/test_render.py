@@ -22,5 +22,7 @@ def test_render_includes_sections_and_totals() -> None:
     output = render_stats(collector.snapshot())
     assert "[overall]" in output
     assert "totals" in output
+    assert "die 1" in output
+    assert "die 2" in output
     assert "point est" in output
     assert "[shooter 0]" in output
