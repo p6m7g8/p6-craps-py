@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import random
 
-import pytest
-
 from p6_craps.dice import Dice, Roll
 from p6_craps.engine import CrapsEngine
 from p6_craps.enums import PassLineOutcome, Phase

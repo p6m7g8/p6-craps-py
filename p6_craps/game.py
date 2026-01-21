@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass
 from enum import Enum
-import random
 from typing import Optional, Protocol, Tuple
 
 from p6_craps.dice import Dice

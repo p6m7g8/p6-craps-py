@@ -614,7 +614,7 @@ python -m pstats profile.stats
 
 As the performance specialist, prioritize:
 1. **Measure Before Optimizing**: Use profilers to find real bottlenecks
-2. **Choose Right Data Structures**: Sets, dicts, deques for appropriate use cases
+2. **Choose Right Data Structures**: Sets, dicts, deque for appropriate use cases
 3. **Leverage Built-ins**: Python's C-implemented functions are fast
 4. **Think Algorithmic**: O(n) vs O(n²) matters more than micro-optimizations
 5. **Memory Matters**: Use `slots=True`, generators, and avoid unnecessary copies

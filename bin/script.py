@@ -3,10 +3,11 @@
 
 from __future__ import annotations
 
+import json
 import logging
+from pathlib import Path
 import sys
-import time
-from typing import Any, Optional
+from typing import Any
 
 import docopt
 
@@ -76,8 +77,62 @@ def main(args: dict[str, Any]) -> int:
     except ConfigError as exc:
         LOGGER.error("Failed to load config: %s", exc)
         return 1
+    LOGGER.debug("Loaded config", extra={"config_keys": sorted(cfg)})
 
     return 0
+
+
+class ConfigError(RuntimeError):
+    """Raised when configuration loading fails."""
+
+
+def load_config(path: str) -> dict[str, Any]:
+    """Load JSON configuration from disk."""
+    if not path:
+        raise ConfigError("Config path is required")
+    config_path = Path(path)
+    if not config_path.exists():
+        return {}
+    try:
+        data = json.loads(config_path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        raise ConfigError(f"Failed to read config: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise ConfigError(f"Invalid JSON config: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ConfigError("Config must be a JSON object")
+    return data
+
+
+def _parse_max_rolls(value: Any) -> int | None:
+    """Parse the max rolls option."""
+    return _parse_positive_int(value, "max rolls")
+
+
+def _parse_frame_delay(value: Any) -> float:
+    """Parse the frame delay option."""
+    if value is None:
+        return 0.0
+    try:
+        delay = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ConfigError(f"Frame delay must be a number, got {value!r}") from exc
+    if delay < 0:
+        raise ConfigError("Frame delay must be non-negative")
+    return delay
+
+
+def _parse_positive_int(value: Any, label: str) -> int | None:
+    """Parse a positive integer option or return None."""
+    if value is None:
+        return None
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ConfigError(f"{label} must be an integer, got {value!r}") from exc
+    if parsed <= 0:
+        raise ConfigError(f"{label} must be positive")
+    return parsed
 
 
 if __name__ == "__main__":
