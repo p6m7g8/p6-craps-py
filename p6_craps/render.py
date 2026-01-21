@@ -38,6 +38,9 @@ def _format_counts(counters: StatsCounters) -> list[TableRow]:
             "pushes",
             [f"{counters.outcomes.push} ({_format_percent(counters.outcomes.push, total_rolls)})"],
         ),
+        TableRow("totals", [_format_totals(counters.roll_counts.totals)]),
+        TableRow("point est", [_format_totals(counters.point_counts.established)]),
+        TableRow("point made", [_format_totals(counters.point_counts.made)]),
     ]
 
 
@@ -53,11 +56,29 @@ def render_stats(snapshot: StatsSnapshot) -> str:
         lines.append(f"[{title}]")
         lines.extend(_render_rows(_format_counts(counters)))
         lines.append("")
+
+    lines.extend(_render_scoped("shooter", snapshot.per_shooter))
+    lines.extend(_render_scoped("player", snapshot.per_player))
     if snapshot.end_reason is not None:
         lines.append(f"end: {snapshot.end_reason.value}")
         lines.append(f"rolls: {snapshot.roll_count}")
         lines.append(f"points: {snapshot.points_made}")
     return "\n".join(lines).rstrip()
+
+
+def _format_totals(values: dict[int, int]) -> str:
+    """Format counts as key=value pairs."""
+    return " ".join(f"{key}={values[key]}" for key in sorted(values))
+
+
+def _render_scoped(label: str, scoped: dict[int, StatsCounters]) -> list[str]:
+    """Render per-seat scoped stats sections."""
+    lines: list[str] = []
+    for seat_index in sorted(scoped):
+        lines.append(f"[{label} {seat_index}]")
+        lines.extend(_render_rows(_format_counts(scoped[seat_index])))
+        lines.append("")
+    return lines
 
 
 def _render_rows(rows: Iterable[TableRow]) -> list[str]:
