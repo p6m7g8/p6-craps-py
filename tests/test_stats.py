@@ -55,6 +55,7 @@ def test_table_stats_collector_scopes() -> None:
     assert snapshot.come_out.rolls == 1
     assert snapshot.point_on.rolls == 0
     assert snapshot.per_shooter[1].rolls == 1
+    assert snapshot.per_player[0].rolls == 1
     assert snapshot.per_player[1].rolls == 1
 
 
