@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Protocol, Tuple
 
@@ -11,6 +11,7 @@ from p6_craps.dice import Dice
 from p6_craps.engine import CrapsEngine, RollResult
 from p6_craps.enums import PassLineOutcome, Phase
 from p6_craps.models import Player, Table
+from p6_craps.strategy import BettingStrategy, FlatBetStrategy
 
 
 class StatsCollector(Protocol):
@@ -70,6 +71,18 @@ class PlayerState:
 
     player: Player
     can_shoot: bool = True
+    strategy: BettingStrategy = field(default_factory=FlatBetStrategy)
+    base_bet: int = 5
+    max_bet: Optional[int] = None
+
+    def __post_init__(self) -> None:
+        """Validate player state."""
+        if self.base_bet <= 0:
+            raise ValueError("base_bet must be positive")
+        if self.max_bet is not None and self.max_bet <= 0:
+            raise ValueError("max_bet must be positive")
+        if self.max_bet is not None and self.max_bet < self.base_bet:
+            raise ValueError("max_bet cannot be less than base_bet")
 
     def has_bankroll(self) -> bool:
         """Return True if player can keep wagering."""
@@ -110,7 +123,7 @@ class Game:
             state = player_states[seat_index]
             if seat is None and state is not None:
                 raise ValueError("player_states must be None for empty seats")
-            if seat is not None and (state is None or state.player != seat):
+            if seat is not None and (state is None or state.player.name != seat.name):
                 raise ValueError("player_states must match table seats")
 
         self._table = table
@@ -173,6 +186,28 @@ class Game:
             roll_count=self.roll_count,
             stop_reason=stop_reason,
         )
+
+    def update_player_state(self, seat_index: int, state: PlayerState) -> None:
+        """Update the player state for a given seat."""
+        if not 0 <= seat_index < 9:
+            raise IndexError("seat_index must be between 0 and 8")
+        seat = self._table.seats[seat_index]
+        if seat is None:
+            raise ValueError("Cannot update state for empty seat")
+        if seat.name != state.player.name:
+            raise ValueError("Updated state must match existing seat")
+        states = list(self._player_states)
+        states[seat_index] = state
+        self._player_states = tuple(states)
+
+    def player_states(self) -> Tuple[Optional[PlayerState], ...]:
+        """Return current player states."""
+        return self._player_states
+
+    @property
+    def phase(self) -> Phase:
+        """Return the current game phase."""
+        return self._engine.phase
 
     def snapshot(self) -> tuple[int, int]:
         """Return the roll count and points made so far."""
