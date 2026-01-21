@@ -122,6 +122,7 @@ class TableStatsCollector(StatsCollector):
     """Collect stats by phase and shooter for a game table."""
 
     def __init__(self) -> None:
+        """Initialize stats containers."""
         self._overall = StatsCounters()
         self._come_out = StatsCounters()
         self._point_on = StatsCounters()
