@@ -5,6 +5,7 @@ from p6_craps.engine import CrapsEngine, RollResult
 from p6_craps.enums import PassLineOutcome, Phase
 from p6_craps.game import Game, GameConfig, GameStep, GameStopReason, PlayerState
 from p6_craps.models import Bankroll, Player, Table
+from p6_craps.stats import StatsSnapshot, TableStatsCollector, percent
 
 __all__ = [
     "Bankroll",
@@ -20,5 +21,8 @@ __all__ = [
     "Player",
     "Roll",
     "RollResult",
+    "StatsSnapshot",
     "Table",
+    "TableStatsCollector",
+    "percent",
 ]
