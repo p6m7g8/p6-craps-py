@@ -4,14 +4,21 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Dict, Sequence
+from typing import Any, Dict, Mapping, Sequence
 
 from p6_craps.enums import PassLineOutcome, Phase
 from p6_craps.game import Game, GameConfig, PlayerState
 from p6_craps.models import Bankroll, Player
 from p6_craps.render import render_stats
 from p6_craps.stats import TableStatsCollector
-from p6_craps.strategy import BetDecision, BettingState
+from p6_craps.strategy import (
+    BetDecision,
+    BettingState,
+    BettingStrategy,
+    FlatBetStrategy,
+    MartingaleStrategy,
+    ParoliStrategy,
+)
 
 
 @dataclass(slots=True, frozen=True)
@@ -80,12 +87,101 @@ def default_players() -> tuple[PlayerState, ...]:
     return tuple(players)
 
 
+def players_from_config(config: Mapping[str, Any]) -> tuple[PlayerState, ...]:
+    """Build player states from configuration."""
+    entries = config.get("players")
+    if not entries:
+        return default_players()
+    if not isinstance(entries, list):
+        raise ValueError("players must be a list")
+    if len(entries) > 9:
+        raise ValueError("players cannot exceed 9 seats")
+    players: list[PlayerState] = []
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise ValueError("player entries must be objects")
+        name = str(entry.get("name") or "").strip()
+        if not name:
+            raise ValueError("player name is required")
+        bankroll = _require_int(entry.get("bankroll"), "bankroll", minimum=0)
+        max_win = entry.get("max_win")
+        if max_win is not None:
+            max_win = _require_int(max_win, "max_win", minimum=1)
+        can_shoot = bool(entry.get("can_shoot", True))
+        base_bet = _require_int(entry.get("base_bet", 5), "base_bet", minimum=1)
+        max_bet = entry.get("max_bet")
+        if max_bet is not None:
+            max_bet = _require_int(max_bet, "max_bet", minimum=1)
+        strategy = _strategy_from_name(entry.get("strategy"))
+        players.append(
+            PlayerState(
+                player=Player(name=name, bankroll=Bankroll(balance=bankroll, max_win=max_win)),
+                can_shoot=can_shoot,
+                strategy=strategy,
+                base_bet=base_bet,
+                max_bet=max_bet,
+            )
+        )
+    return tuple(players)
+
+
+def game_config_from_config(config: Mapping[str, Any], max_rolls: int | None) -> GameConfig:
+    """Build game config with CLI overrides."""
+    target_points = config.get("target_points")
+    if target_points is not None:
+        target_points = _require_int(target_points, "target_points", minimum=1)
+    resolved_max_rolls = max_rolls
+    if resolved_max_rolls is None and "max_rolls" in config:
+        resolved_max_rolls = _require_int(config.get("max_rolls"), "max_rolls", minimum=1)
+    return GameConfig(target_points=target_points, max_rolls=resolved_max_rolls)
+
+
+def simulation_config_from_config(
+    config: Mapping[str, Any],
+    frame_delay: float,
+    clear: bool,
+) -> SimulationConfig:
+    """Build simulation config with CLI overrides."""
+    resolved_delay = frame_delay
+    if "frame_delay" in config and frame_delay == 0.0:
+        resolved_delay = float(config.get("frame_delay") or 0.0)
+    resolved_clear = clear
+    if "clear" in config:
+        resolved_clear = bool(config.get("clear"))
+    return SimulationConfig(frame_delay=resolved_delay, clear=resolved_clear)
+
+
 def _render_frame(stats: TableStatsCollector, clear: bool) -> None:
     """Render a single stats frame to stdout."""
     if clear:
         print("\033[2J\033[H", end="")
     snapshot = stats.snapshot()
     print(render_stats(snapshot))
+
+
+def _strategy_from_name(name: Any) -> BettingStrategy:
+    """Resolve a strategy name to a strategy instance."""
+    if name is None:
+        return FlatBetStrategy()
+    value = str(name).strip().lower()
+    if value in {"flat", "flat_bet", "flatbet"}:
+        return FlatBetStrategy()
+    if value in {"martingale"}:
+        return MartingaleStrategy()
+    if value in {"paroli"}:
+        return ParoliStrategy()
+    raise ValueError(f"Unknown strategy {name!r}")
+
+
+def _require_int(value: Any, label: str, minimum: int) -> int:
+    """Return an int >= minimum or raise."""
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{label} must be an integer") from exc
+    if parsed < minimum:
+        raise ValueError(f"{label} must be >= {minimum}")
+    return parsed
 
 
 def _init_trackers(players: Sequence[PlayerState | None]) -> Dict[int, BettingTracker]:

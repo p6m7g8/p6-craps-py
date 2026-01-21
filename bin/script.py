@@ -11,8 +11,12 @@ from typing import Any
 
 import docopt
 
-from p6_craps.game import GameConfig
-from p6_craps.simulate import SimulationConfig, default_players, run_simulation
+from p6_craps.simulate import (
+    game_config_from_config,
+    players_from_config,
+    run_simulation,
+    simulation_config_from_config,
+)
 
 USAGE = """p6-craps-py - Craps simulation CLI.
 
@@ -82,10 +86,11 @@ def main(args: dict[str, Any]) -> int:
         return 1
     LOGGER.debug("Loaded config", extra={"config_keys": sorted(cfg)})
 
-    game_config = GameConfig(max_rolls=max_rolls)
-    sim_config = SimulationConfig(frame_delay=frame_delay, clear=clear)
+    players = players_from_config(cfg)
+    game_config = game_config_from_config(cfg, max_rolls=max_rolls)
+    sim_config = simulation_config_from_config(cfg, frame_delay=frame_delay, clear=clear)
     try:
-        return run_simulation(default_players(), game_config=game_config, sim_config=sim_config)
+        return run_simulation(players, game_config=game_config, sim_config=sim_config)
     except ValueError as exc:
         LOGGER.error("Simulation failed: %s", exc)
         return 1
