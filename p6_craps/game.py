@@ -174,6 +174,10 @@ class Game:
             stop_reason=stop_reason,
         )
 
+    def snapshot(self) -> tuple[int, int]:
+        """Return the roll count and points made so far."""
+        return self.roll_count, self._engine.completed_points
+
     def check_stop(self) -> Optional[GameStopReason]:
         """Return a stop reason if the game should end."""
         if self._config.target_points is not None and self._engine.completed_points >= self._config.target_points:
