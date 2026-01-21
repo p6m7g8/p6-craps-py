@@ -157,9 +157,12 @@ class TableStatsCollector(StatsCollector):
             self._per_shooter[shooter_index] = StatsCounters()
         self._per_shooter[shooter_index].record(roll_result)
 
-        if shooter_index not in self._per_player:
-            self._per_player[shooter_index] = StatsCounters()
-        self._per_player[shooter_index].record(roll_result)
+        for seat_index, seat in enumerate(table.seats):
+            if seat is None:
+                continue
+            if seat_index not in self._per_player:
+                self._per_player[seat_index] = StatsCounters()
+            self._per_player[seat_index].record(roll_result)
 
     def record_game_end(self, reason: GameStopReason, roll_count: int, points_made: int) -> None:
         """Record the game end reason and totals."""
