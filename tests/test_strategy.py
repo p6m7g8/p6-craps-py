@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 
-from p6_craps.enums import PassLineOutcome
 from p6_craps.strategy import (
     BetDecision,
     BettingState,

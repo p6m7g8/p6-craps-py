@@ -73,7 +73,7 @@ class MartingaleStrategy:
 
     def next_bet(self, state: BettingState) -> BetDecision:
         """Return a martingale bet based on consecutive losses."""
-        bet = state.base_bet * (2 ** state.consecutive_losses)
+        bet = state.base_bet * (2**state.consecutive_losses)
         cap = state.max_bet if state.max_bet is not None else bet
         amount = min(bet, cap, state.bankroll)
         return BetDecision(amount=amount, reason="martingale")
@@ -85,7 +85,7 @@ class ParoliStrategy:
 
     def next_bet(self, state: BettingState) -> BetDecision:
         """Return a paroli bet based on consecutive wins."""
-        bet = state.base_bet * (2 ** state.consecutive_wins)
+        bet = state.base_bet * (2**state.consecutive_wins)
         cap = state.max_bet if state.max_bet is not None else bet
         amount = min(bet, cap, state.bankroll)
         return BetDecision(amount=amount, reason="paroli")
