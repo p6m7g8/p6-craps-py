@@ -42,6 +42,19 @@ def run_simulation(
             time.sleep(sim_config.frame_delay)
 
 
+def run_until_complete(
+    players: Sequence[PlayerState],
+    game_config: GameConfig,
+) -> tuple[int, int]:
+    """Run a simulation without rendering; return roll count and points made."""
+    stats = TableStatsCollector()
+    game = Game.from_players(players=tuple(players), config=game_config, stats=stats)
+    while True:
+        step = game.step()
+        if step.stop_reason is not None:
+            return game.snapshot()
+
+
 def default_players() -> tuple[PlayerState, ...]:
     """Create default players for CLI usage."""
     players = [

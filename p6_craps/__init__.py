@@ -6,7 +6,12 @@ from p6_craps.enums import PassLineOutcome, Phase
 from p6_craps.game import Game, GameConfig, GameStep, GameStopReason, PlayerState
 from p6_craps.models import Bankroll, Player, Table
 from p6_craps.render import render_stats
-from p6_craps.simulate import SimulationConfig, default_players, run_simulation
+from p6_craps.simulate import (
+    SimulationConfig,
+    default_players,
+    run_simulation,
+    run_until_complete,
+)
 from p6_craps.stats import StatsSnapshot, TableStatsCollector, percent
 from p6_craps.strategy import (
     BetDecision,
@@ -43,4 +48,5 @@ __all__ = [
     "percent",
     "render_stats",
     "run_simulation",
+    "run_until_complete",
 ]
