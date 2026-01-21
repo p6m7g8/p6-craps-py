@@ -1,0 +1,251 @@
+##########################################################################
+# Aider Configuration for p6-craps-py
+#
+# Aider is an AI pair programming tool in the terminal.
+# https://aider.chat
+#
+# This configuration enforces project-specific standards and patterns.
+##########################################################################
+
+# Model Configuration
+# Use the best available model for code generation
+# Options: gpt-4-turbo, claude-opus, claude-sonnet, etc.
+model: claude-opus-4-5
+
+# Editor model for smaller edits and suggestions
+# Options: gpt-3.5-turbo, claude-haiku, etc.
+editor-model: claude-sonnet-3-5
+
+# Git Integration
+auto-commits: true
+dirty-commits: false
+auto-lint: true
+lint-cmd: "uv run pre-commit run --all-files"
+
+# Code Style
+# Enforce black formatting with 120 char line length
+auto-format: true
+
+# Testing
+# Run tests after making changes
+auto-test: true
+test-cmd: "PYTHONPATH=. uv run pytest -v --no-cov"
+
+# Files to Always Include in Context
+# These files provide essential project context
+read:
+   - README.md
+   - pyproject.toml
+   - p6_craps/__init__.py
+   - p6_craps/constants.py
+
+# Files/Directories to Ignore
+# Don't suggest changes to these
+ignore:
+   - "*.pyc"
+   - "__pycache__"
+   - ".pytest_cache"
+   - ".pyre"
+   - "*.egg-info"
+   - ".coverage"
+   - "htmlcov"
+   - "dist"
+   - "build"
+   - ".venv"
+   - "venv"
+   - "uv.lock" # Don't edit lock file manually
+
+# Git Configuration
+git: true
+gitignore: true
+
+# Commit Message Configuration
+# Use conventional commits format
+commit: true
+commit-prompt: |
+   Generate a conventional commit message following these rules:
+
+   Format: <type>: <description>
+
+   Types:
+   - feat: New feature
+   - fix: Bug fix
+   - docs: Documentation changes
+   - test: Test additions/modifications
+   - refactor: Code refactoring
+   - style: Code formatting
+   - perf: Performance improvements
+   - chore: Maintenance tasks
+
+   Examples:
+   - feat: add Martingale betting strategy
+   - fix: prevent negative bankroll in Player class
+   - test: add edge case tests for seven-out scenario
+
+   Keep description concise and in imperative mood.
+
+# Message to Display to User
+# Project-specific instructions for Aider
+message: |
+
+   ╔════════════════════════════════════════════════════════════╗
+   ║         p6-craps-py: Python Craps Simulator                ║
+   ║                                                            ║
+   ║  Python 3.14.2 | uv package manager | pytest testing      ║
+   ╚════════════════════════════════════════════════════════════╝
+
+   IMPORTANT PROJECT RULES:
+
+   1. CODE STYLE (Mandatory):
+      - Python 3.14.2 ONLY
+      - Black formatter: 120 char line length
+      - Type hints: REQUIRED (use `from __future__ import annotations`)
+      - Docstrings: Google-style, required for all public APIs
+      - Import sorting: isort with black profile
+
+   2. ARCHITECTURAL PATTERNS:
+      - Immutable dataclasses: @dataclass(slots=True, frozen=True)
+      - Enums for state/types: class Phase(enum.Enum)
+      - Dependency injection: Inject Random() for testability
+      - Pure functions: Minimize side effects
+
+   3. TESTING (TDD Approach):
+      - Write tests FIRST
+      - Mirror structure: tests/test_<module>.py
+      - Deterministic: Use seeded Random instances
+      - Coverage: Aim for 90%+
+      - Run: PYTHONPATH=. uv run pytest -v --no-cov
+
+   4. QUALITY GATES (ALL must pass):
+      ✓ black (formatter)
+      ✓ isort (import sorter)
+      ✓ flake8 (linter)
+      ✓ pydocstyle (docstring checker)
+      ✓ pylint (static analysis)
+      ✓ yamllint (YAML validator)
+      ✓ bandit (security scanner)
+      ✓ detect-secrets (secret detection)
+      ✓ codespell (spell checker)
+      ✓ pytest (test suite)
+
+      Run: uv run pre-commit run --all-files
+
+   5. SECURITY:
+      - NO hardcoded secrets
+      - Input validation at all boundaries
+      - Use environment variables for config
+      - Run: uv run bandit -r p6_craps
+
+   6. DEPENDENCY MANAGEMENT:
+      - Add deps: uv add <package>
+      - Add dev deps: uv add --dev <package>
+      - NEVER use pip directly
+      - Audit: uv run pip-audit
+
+   7. CRAPS DOMAIN KNOWLEDGE:
+      COME_OUT phase:
+        - 7/11 = Pass Line wins
+        - 2/3/12 = Pass Line loses (craps)
+        - 4/5/6/8/9/10 = Establish point → POINT_ON
+
+      POINT_ON phase:
+        - Roll point number = Pass Line wins
+        - Roll 7 = Pass Line loses (seven out)
+        - Other = Continue rolling
+
+   8. CODE GENERATION RULES:
+      ALWAYS:
+        • Add `from __future__ import annotations`
+        • Include module docstrings
+        • Add type hints to all functions
+        • Use descriptive variable names
+        • Validate inputs
+        • Write corresponding tests
+
+      NEVER:
+        • Use print() for logging (use logging module)
+        • Skip type hints
+        • Leave commented-out code
+        • Hardcode configuration
+        • Use mutable default arguments
+        • Catch exceptions without handling
+
+   9. EXAMPLE CODE PATTERN:
+
+      ```python
+      """Module for betting strategies."""
+
+      from __future__ import annotations
+
+      from dataclasses import dataclass
+      from typing import Optional
+
+      @dataclass(slots=True, frozen=True)
+      class Strategy:
+          """Betting strategy base class.
+
+          Attributes:
+              min_bet: Minimum bet amount in dollars.
+              max_bet: Maximum bet amount in dollars.
+          """
+          min_bet: int
+          max_bet: int
+
+          def calculate_bet(self, bankroll: int) -> int:
+              """Calculate next bet amount.
+
+              Args:
+                  bankroll: Current player bankroll.
+
+              Returns:
+                  Bet amount in dollars.
+
+              Raises:
+                  ValueError: If bankroll is negative.
+              """
+              if bankroll < 0:
+                  raise ValueError("Bankroll cannot be negative")
+              return min(self.max_bet, max(self.min_bet, bankroll // 10))
+      ```
+
+   10. COMMON COMMANDS:
+       Test:    PYTHONPATH=. uv run pytest -v --no-cov
+       Lint:    uv run pre-commit run --all-files
+       Format:  uv run black . && uv run isort .
+       Run:     uv run python bin/script.py --debug
+       Secure:  uv run bandit -r p6_craps
+
+   ═══════════════════════════════════════════════════════════
+
+   Ready to assist! Please describe what you'd like to build,
+   fix, or improve, and I'll follow these project standards.
+
+# Additional Aider Settings
+show-diffs: true
+pretty: true
+stream: true
+voice-language: en
+
+# Map file extensions to languages (if needed)
+# file-extensions:
+#   .py: python
+
+# Code execution (disabled for safety)
+no-exec: true
+
+# Restore chat history
+restore-chat-history: true
+
+# Maximum tokens to send to model
+max-tokens: 8192
+
+# Directory for aider metadata
+aider-dir: .aider
+
+# Cache directory
+cache-dir: .aider.cache
+# Watch files for changes
+# watch-files: false
+
+# Apply changes directly without asking
+# yes: false

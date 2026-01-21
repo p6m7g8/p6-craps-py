@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+main() {
+
+    PYTHONPATH=. exec uv run python bin/script.py "$@"
+}
+
+main "$@"

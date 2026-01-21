@@ -1,0 +1,19 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: p6m7g8-actions/checkout@main
+
+      - name: Set up Python
+        uses: p6m7g8-actions/python-setup@main
+
+      - name: Run pre-commit hooks
+        run: uv run pre-commit run --all-files

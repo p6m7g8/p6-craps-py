@@ -1,0 +1,11 @@
+{
+    "source_directories": [
+        "."
+    ],
+    "search_path": [
+        "/Users/pgollucci/.local/share/virtualenvs/launchdarkly-scripts-hHUK2iet/lib/python3.13/site-packages"
+    ],
+    "strict": true,
+    "ignore_all_errors": [],
+    "python_version": "3.13"
+}

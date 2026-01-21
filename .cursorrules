@@ -1,0 +1,410 @@
+# Cursor Rules for p6-craps-py
+
+You are an AI coding assistant helping with the p6-craps-py project, a Python-based craps simulator.
+
+## Project Context
+
+**Type**: Python CLI application for craps game simulation and statistical analysis
+**Python Version**: 3.14.2 (strict requirement)
+**Package Manager**: uv (NEVER use pip)
+**Testing**: pytest with pytest-cov
+**Primary Dependencies**: docopt (CLI parsing)
+
+## Core Architecture Patterns
+
+### 1. Immutable Dataclasses with Slots
+```python
+from __future__ import annotations
+from dataclasses import dataclass
+
+@dataclass(slots=True, frozen=True)
+class Roll:
+    """Immutable dice roll."""
+    d1: int
+    d2: int
+
+    @property
+    def total(self) -> int:
+        return self.d1 + self.d2
+```
+
+### 2. Enum for State/Types
+```python
+import enum
+
+class Phase(enum.Enum):
+    """Game phase enumeration."""
+    COME_OUT = "come_out"
+    POINT_ON = "point_on"
+```
+
+### 3. Dependency Injection for Testability
+```python
+import random
+from typing import Optional
+
+class CrapsEngine:
+    def __init__(self, rng: Optional[random.Random] = None) -> None:
+        self._rng: random.Random = rng or random.Random()
+```
+
+## Mandatory Code Style
+
+### Formatting (MUST PASS PRE-COMMIT)
+- **Line Length**: 120 characters (black --line-length=120)
+- **Import Sorting**: isort with black profile
+- **Type Hints**: Required for all functions, use `from __future__ import annotations`
+- **Docstrings**: Google-style, required for all public modules/classes/functions
+
+### Example Function
+```python
+def calculate_payout(bet_amount: int, bet_type: str, outcome: str) -> int:
+    """Calculate payout for a resolved bet.
+
+    Args:
+        bet_amount: Amount wagered in dollars.
+        bet_type: Type of bet placed (e.g., 'pass_line', 'field').
+        outcome: Result of the roll ('win' or 'loss').
+
+    Returns:
+        Payout amount in dollars (0 for loss, 2x bet for win on pass line).
+
+    Raises:
+        ValueError: If bet_amount is negative or bet_type unknown.
+    """
+    if bet_amount < 0:
+        raise ValueError("Bet amount cannot be negative")
+    # Implementation...
+```
+
+## Pre-Commit Quality Gates
+
+ALL code MUST pass these checks before commit:
+1. black (formatter, 120 char line length)
+2. isort (import sorter, black profile)
+3. flake8 (style guide)
+4. pydocstyle (docstring checker)
+5. pylint (static analyzer)
+6. yamllint (YAML files)
+7. bandit (security scanner)
+8. detect-secrets (secret detection)
+9. codespell (spell checker)
+10. pytest (test suite, -v --no-cov)
+
+**Run before committing:**
+```bash
+uv run pre-commit run --all-files
+```
+
+## Testing Requirements
+
+### Test Structure
+- Mirror source structure: `tests/test_<module>.py`
+- Use pytest fixtures for setup
+- Inject Random instances with seeds for deterministic tests
+- Aim for high coverage (80%+ minimum, 90%+ target)
+
+### Example Test
+```python
+"""Tests for betting strategy module."""
+
+import pytest
+import random
+from p6_craps.strategy import FlatBetStrategy
+
+
+class TestFlatBetStrategy:
+    """Test suite for FlatBetStrategy."""
+
+    def test_returns_fixed_amount(self):
+        """Should return same bet regardless of bankroll."""
+        strategy = FlatBetStrategy(bet_amount=10)
+        assert strategy.calculate_bet(100) == 10
+        assert strategy.calculate_bet(1000) == 10
+
+    @pytest.mark.parametrize("bankroll,expected", [
+        (100, 10),
+        (50, 10),
+        (0, 10),
+    ])
+    def test_various_bankrolls(self, bankroll, expected):
+        """Test with multiple bankroll values."""
+        strategy = FlatBetStrategy(bet_amount=expected)
+        assert strategy.calculate_bet(bankroll) == expected
+
+    def test_deterministic_rng(self):
+        """RNG-based tests should use seeded Random instances."""
+        rng = random.Random(42)
+        # Use rng in test...
+```
+
+## Security Guidelines
+
+### Input Validation
+```python
+def validate_bet(amount: int, max_bet: int) -> None:
+    """Validate bet amount."""
+    if not isinstance(amount, int):
+        raise TypeError(f"Bet must be int, got {type(amount)}")
+    if amount <= 0:
+        raise ValueError(f"Bet must be positive, got {amount}")
+    if amount > max_bet:
+        raise ValueError(f"Bet exceeds maximum: {amount} > {max_bet}")
+```
+
+### NO Secrets in Code
+- NEVER hardcode API keys, passwords, tokens
+- Use environment variables: `os.getenv("API_KEY")`
+- Run `detect-secrets` before committing
+
+### Security Commands
+```bash
+uv run bandit -r p6_craps     # Security scan
+uv run detect-secrets scan    # Find secrets
+uv run pip-audit              # Dependency CVEs
+```
+
+## Performance Best Practices
+
+### Use Appropriate Data Structures
+```python
+# ✅ Set for membership testing (O(1))
+POINT_NUMBERS = {4, 5, 6, 8, 9, 10}
+if roll in POINT_NUMBERS:
+    ...
+
+# ✅ Generators for large datasets
+def simulate_rolls(n: int):
+    for _ in range(n):
+        yield roll_dice()
+
+# ✅ slots for memory efficiency
+@dataclass(slots=True, frozen=True)
+class Result:
+    value: int
+```
+
+### Avoid Common Anti-Patterns
+- ❌ String concatenation in loops (use str.join())
+- ❌ List comprehensions storing all data (use generators)
+- ❌ Unnecessary object creation in hot loops
+- ❌ O(n²) algorithms where O(n log n) is possible
+
+## Development Workflow
+
+### Adding a Feature
+1. Write failing test first (TDD)
+2. Implement minimal code to pass test
+3. Refactor for clarity
+4. Run `uv run pre-commit run --all-files`
+5. Commit with conventional commit message
+
+### Dependency Management
+```bash
+uv add <package>              # Add production dependency
+uv add --dev <package>        # Add dev dependency
+uv sync                       # Install all dependencies
+uv lock --upgrade             # Update lock file
+```
+
+### Common Commands
+```bash
+# Run tests
+uv run pytest -v --cov=p6_craps
+
+# Format code
+uv run black .
+uv run isort .
+
+# Lint
+uv run flake8
+uv run pylint p6_craps bin
+
+# Type check
+uv run pyre check
+
+# Run CLI
+uv run python bin/script.py --debug
+```
+
+## Conventional Commits
+
+Use these prefixes:
+- `feat:` New feature
+- `fix:` Bug fix
+- `test:` Test changes
+- `docs:` Documentation
+- `refactor:` Code refactoring
+- `style:` Formatting
+- `perf:` Performance
+- `chore:` Maintenance
+
+Example: `feat: add Martingale betting strategy`
+
+## Domain Knowledge: Craps Rules
+
+### COME_OUT Phase
+- Roll 7 or 11: Pass Line WINS
+- Roll 2, 3, or 12: Pass Line LOSES (craps)
+- Roll 4, 5, 6, 8, 9, 10: Establish POINT → POINT_ON phase
+
+### POINT_ON Phase
+- Roll the point number: Pass Line WINS → COME_OUT
+- Roll 7: Pass Line LOSES (seven out) → COME_OUT
+- Any other number: Continue rolling
+
+## Code Generation Rules
+
+### ALWAYS:
+- Add `from __future__ import annotations` at top of file
+- Include module-level docstrings
+- Add type hints to all functions/methods
+- Use Google-style docstrings
+- Follow existing code patterns (dataclasses, enums, DI)
+- Write tests for new code
+- Validate input at function boundaries
+- Use descriptive variable names
+- Keep line length ≤ 120 chars
+
+### NEVER:
+- Use pip (use uv instead)
+- Skip type hints
+- Leave commented-out code
+- Use print() for logging (use logging module)
+- Hardcode secrets or config values
+- Use mutable default arguments
+- Catch exceptions without handling
+- Commit without running pre-commit
+- Add dependencies without justification
+- Use global state
+
+## File Structure
+
+```
+p6_craps/
+├── __init__.py          # Package exports
+
+tests/
+```
+
+## When Suggesting Changes
+
+1. **Read existing code first** - Understand current patterns
+2. **Make minimal changes** - One feature/fix at a time
+3. **Include tests** - Show test code alongside implementation
+4. **Show validation** - Provide command to verify change works
+5. **Explain trade-offs** - Discuss alternatives when relevant
+6. **Update docs** - Modify docstrings/README if behavior changes
+7. **Consider performance** - But don't prematurely optimize
+8. **Think security** - Validate inputs, no secrets
+
+## Quick Checklist for Code Review
+
+Before suggesting code is ready:
+- [ ] Type hints present
+- [ ] Docstrings added/updated
+- [ ] Tests written/updated
+- [ ] No hardcoded values
+- [ ] Input validation in place
+- [ ] Error messages are clear
+- [ ] Follows existing patterns
+- [ ] No commented-out code
+- [ ] Would pass `uv run pre-commit run --all-files`
+
+## Examples
+
+### Good: Adding a New Strategy
+```python
+"""Martingale betting strategy implementation."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Optional
+
+
+@dataclass(slots=True, frozen=True)
+class MartingaleStrategy:
+    """Martingale betting strategy - double bet after loss.
+
+    Attributes:
+        base_bet: Initial bet amount in dollars.
+        max_bet: Maximum allowed bet (bankroll safety).
+    """
+
+    base_bet: int
+    max_bet: int
+
+    def calculate_bet(self, bankroll: int, consecutive_losses: int) -> int:
+        """Calculate next bet based on consecutive losses.
+
+        Args:
+            bankroll: Current player bankroll.
+            consecutive_losses: Number of consecutive losses.
+
+        Returns:
+            Next bet amount.
+
+        Raises:
+            ValueError: If bankroll is negative.
+        """
+        if bankroll < 0:
+            raise ValueError("Bankroll cannot be negative")
+
+        bet = self.base_bet * (2 ** consecutive_losses)
+        return min(bet, self.max_bet, bankroll)
+```
+
+### Good: Corresponding Test
+```python
+"""Tests for Martingale strategy."""
+
+import pytest
+from p6_craps.strategy import MartingaleStrategy
+
+
+class TestMartingaleStrategy:
+    """Test suite for MartingaleStrategy."""
+
+    def test_initial_bet_is_base_bet(self):
+        """First bet should equal base bet."""
+        strategy = MartingaleStrategy(base_bet=10, max_bet=1000)
+        assert strategy.calculate_bet(bankroll=100, consecutive_losses=0) == 10
+
+    def test_doubles_after_loss(self):
+        """Bet should double after each loss."""
+        strategy = MartingaleStrategy(base_bet=10, max_bet=1000)
+        assert strategy.calculate_bet(100, 0) == 10
+        assert strategy.calculate_bet(100, 1) == 20
+        assert strategy.calculate_bet(100, 2) == 40
+        assert strategy.calculate_bet(100, 3) == 80
+
+    def test_respects_max_bet(self):
+        """Should not exceed max_bet."""
+        strategy = MartingaleStrategy(base_bet=10, max_bet=50)
+        assert strategy.calculate_bet(1000, 10) == 50
+
+    def test_respects_bankroll(self):
+        """Should not exceed bankroll."""
+        strategy = MartingaleStrategy(base_bet=10, max_bet=1000)
+        assert strategy.calculate_bet(bankroll=30, consecutive_losses=2) == 30
+
+    def test_raises_on_negative_bankroll(self):
+        """Should raise ValueError for negative bankroll."""
+        strategy = MartingaleStrategy(base_bet=10, max_bet=1000)
+        with pytest.raises(ValueError, match="negative"):
+            strategy.calculate_bet(bankroll=-10, consecutive_losses=0)
+```
+
+## Summary
+
+This project values:
+1. **Correctness**: Tests prove it works
+2. **Maintainability**: Clear, documented code
+3. **Security**: Input validation, no secrets
+4. **Performance**: Efficient algorithms and data structures
+5. **Quality**: All pre-commit hooks pass
+
+Follow established patterns, write comprehensive tests, and ensure all quality gates pass.
+
+**Core principle**: Make it work, make it right, make it fast - in that order.
